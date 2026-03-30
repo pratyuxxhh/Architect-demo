@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ArchitectAI — The Solution</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050810;
+      --surface: #0b0f1a;
+      --card: #0f1522;
+      --border: rgba(99,120,255,0.15);
+      --accent: #5b7cfa;
+      --accent2: #00e5c0;
+      --accent3: #f06aff;
+      --text: #e8eaf6;
+      --muted: #6b7280;
+      --glow: rgba(91,124,250,0.25);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', sans-serif; font-weight: 300;
+      overflow-x: hidden; cursor: none;
+    }
+
+    .cursor { position: fixed; width: 12px; height: 12px; background: var(--accent2); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); mix-blend-mode: screen; }
+    .cursor-ring { position: fixed; width: 36px; height: 36px; border: 1px solid rgba(0,229,192,0.5); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: all 0.15s ease; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 1000; opacity: 0.4;
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 60px;
+      background: rgba(5,8,16,0.85); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .nav-back {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); text-decoration: none; font-size: 0.85rem;
+      transition: color 0.2s; cursor: none;
+    }
+    .nav-back:hover { color: var(--text); }
+
+    /* PAGE HEADER */
+    .page-header {
+      padding: 160px 60px 80px;
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .page-header-left {}
+    .section-label {
+      font-family: 'DM Mono', monospace; font-size: 0.72rem;
+      letter-spacing: 0.15em; color: var(--accent2);
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .page-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 800; letter-spacing: -0.04em; line-height: 1.0;
+      animation: fadeUp 0.7s ease both;
+    }
+    .page-title span {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .page-sub {
+      margin-top: 20px; font-size: 1rem; color: var(--muted);
+      line-height: 1.75; animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    /* DEMO TERMINAL */
+    .demo-terminal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      animation: fadeUp 0.7s ease 0.2s both;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 60px rgba(91,124,250,0.08);
+    }
+    .terminal-bar {
+      background: rgba(15,21,34,0.9);
+      padding: 12px 16px; display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot-r { width:10px; height:10px; border-radius:50%; background:#ff5f57; }
+    .dot-y { width:10px; height:10px; border-radius:50%; background:#febc2e; }
+    .dot-g { width:10px; height:10px; border-radius:50%; background:#28c840; }
+    .terminal-title { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); margin-left:auto; }
+    .terminal-body { padding: 24px; font-family:'DM Mono',monospace; font-size:0.78rem; min-height: 220px; }
+    .t-prompt { color: var(--accent2); }
+    .t-text { color: var(--text); }
+    .t-comment { color: var(--muted); font-style: italic; }
+    .t-result { color: var(--accent); }
+    .t-highlight { color: var(--accent3); }
+    .t-line { margin: 6px 0; line-height: 1.6; }
+    .t-cursor { display:inline-block; width:8px; height:14px; background:var(--accent2); animation: blink 1s step-end infinite; vertical-align: middle; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+    /* DEMO FLOW */
+    .demo-section {
+      padding: 80px 60px; max-width: 1200px; margin: 0 auto;
+      border-top: 1px solid var(--border);
+    }
+
+    .demo-tabs {
+      display: flex; gap: 4px; margin-bottom: 40px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 6px;
+    }
+    .tab {
+      flex: 1; padding: 10px 16px; border-radius: 8px;
+      border: none; background: transparent;
+      color: var(--muted); font-family: 'Syne', sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: none;
+      transition: all 0.2s; text-align: center;
+    }
+    .tab.active {
+      background: rgba(91,124,250,0.15);
+      color: var(--accent); border: 1px solid rgba(91,124,250,0.25);
+    }
+    .tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.04); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* INPUT PANEL */
+    .input-panel {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .panel-icon { font-size: 1.1rem; }
+    .panel-title { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; }
+    .panel-tag {
+      margin-left: auto;
+      font-family: 'DM Mono', monospace; font-size: 0.65rem;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(0,229,192,0.1); color: var(--accent2);
+      letter-spacing: 0.05em;
+    }
+    .panel-body { padding: 28px; }
+
+    /* FAKE INPUT */
+    .fake-input {
+      background: rgba(5,8,16,0.6);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px 20px; font-family: 'DM Mono', monospace;
+      font-size: 0.85rem; color: var(--text); line-height: 1.6;
+      min-height: 80px; cursor: none;
+    }
+    .fake-input .placeholder { color: var(--muted); }
+
+    .example-prompts {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+    }
+    .prompt-chip {
+      background: rgba(91,124,250,0.08);
+      border: 1px solid rgba(91,124,250,0.2);
+      color: var(--accent); font-family: 'DM Mono', monospace;
+      font-size: 0.7rem; padding: 5px 12px; border-radius: 20px;
+      cursor: none; transition: all 0.2s;
+    }
+    .prompt-chip:hover, .prompt-chip.selected {
+      background: rgba(91,124,250,0.2);
+      border-color: rgba(91,124,250,0.5);
+    }
+    .prompt-chip.selected { color: white; }
+
+    .run-btn {
+      margin-top: 20px; width: 100%;
+      background: linear-gradient(135deg, var(--accent), #3d5fe8);
+      color: white; border: none; padding: 14px;
+      border-radius: 10px; font-family: 'Syne', sans-serif;
+      font-size: 0.9rem; font-weight: 700; cursor: none;
+      transition: all 0.25s; box-shadow: 0 0 30px rgba(91,124,250,0.2);
+    }
+    .run-btn:hover { opacity: 0.85; transform: translateY(-2px); }
+    .run-btn:active { transform: translateY(0); }
+
+    /* OUTPUT PANELS */
+    .output-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    .output-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .output-card .panel-header { padding: 14px 20px; }
+
+    /* ARCH OUTPUT */
+    .arch-output {
+      padding: 20px;
+      font-family: 'DM Mono', monospace; font-size: 0.78rem;
+      color: var(--muted); line-height: 1.7;
+    }
+    .arch-output .service-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .service-badge {
+      min-width: 90px; padding: 3px 8px; border-radius: 5px;
+      font-size: 0.65rem; text-align: center; flex-shrink: 0;
+      font-family: 'DM Mono', monospace;
+    }
+    .sb-orange { background: rgba(255,165,0,0.12); color: #ffb347; border: 1px solid rgba(255,165,0,0.2); }
+    .sb-blue { background: rgba(91,124,250,0.12); color: var(--accent); border: 1px solid rgba(91,124,250,0.2); }
+    .sb-green { background: rgba(0,229,192,0.10); color: var(--accent2); border: 1px solid rgba(0,229,192,0.2); }
+    .sb-purple { background: rgba(240,106,255,0.10); color: var(--accent3); border: 1px solid rgba(240,106,255,0.2); }
+    .service-desc { font-size: 0.78rem; color: var(--muted); }
+    .service-desc strong { color: var(--text); }
+
+    /* MERMAID DIAGRAM PLACEHOLDER */
+    .diagram-output { padding: 20px; }
+    .mermaid-box {
+      background: rgba(5,8,16,0.7);
+      border: 1px solid rgba(91,124,250,0.15);
+      border-radius: 10px; padding: 20px;
+      font-family: 'DM Mono', monospace; font-size: 0.7rem;
+      color: var(--accent); line-height: 1.7; overflow-x: auto;
+    }
+    .mermaid-box .kw { color: var(--accent3); }
+    .mermaid-box .node { color: var(--accent2); }
+    .mermaid-box .edge { color: var(--muted); }
+
+    /* DIAGRAM VISUAL */
+    .diagram-visual { margin-top: 16px; }
+    #flow-canvas {
+      width: 100%; border-radius: 10px; overflow: hidden;
+    }
+
+    /* COST OUTPUT */
+    .cost-output { padding: 20px; }
+    .cost-total {
+      font-family: 'Syne', sans-serif; font-size: 2.5rem;
+      font-weight: 800; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .cost-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+    .cost-breakdown { margin-top: 20px; }
+    .cost-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    }
+    .cost-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; }
+    .cost-bar { height: 100%; border-radius: 3px; }
+    .cost-name { font-size: 0.78rem; color: var(--muted); min-width: 120px; }
+    .cost-amt { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text); min-width: 60px; text-align: right; }
+
+    /* AUDIT TAB */
+    .audit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .audit-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px;
+    }
+    .audit-score {
+      font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1;
+    }
+    .score-good { background: linear-gradient(135deg, var(--accent2), #00c48c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .score-warn { background: linear-gradient(135deg, #ffb347, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .score-label { font-size: 0.75rem; color: var(--muted); margin-top: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+    .audit-items { margin-top: 24px; }
+    .audit-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.83rem; line-height: 1.55;
+    }
+    .audit-item .ai-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .audit-item .ai-text { color: var(--muted); }
+    .audit-item .ai-text strong { color: var(--text); display: block; margin-bottom: 2px; }
+
+    .full-audit-card {
+      grid-column: 1 / -1;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px;
+    }
+    .recommendations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+    .rec-card {
+      background: rgba(5,8,16,0.5); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .rec-card .rec-icon { font-size: 1.5rem; margin-bottom: 12px; }
+    .rec-card h5 { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; }
+    .rec-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+    .rec-saving { margin-top: 10px; font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--accent2); }
+
+    /* AWS SERVICES SPOTLIGHT */
+    .aws-section { padding: 80px 60px; max-width: 1200px; margin: 0 auto; border-top: 1px solid var(--border); }
+    .aws-services-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 48px; }
+    .aws-service-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px 20px;
+      transition: all 0.3s; cursor: none;
+    }
+    .aws-service-card:hover { border-color: rgba(255,153,0,0.4); transform: translateY(-4px); }
+    .aws-logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255,153,0,0.2), rgba(255,100,0,0.1));
+      border: 1px solid rgba(255,153,0,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; margin-bottom: 16px;
+    }
+    .aws-service-card h5 { font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+    .aws-service-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+    .aws-why { margin-top: 10px; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: #ffb347; letter-spacing: 0.04em; }
+
+    /* FLOW DIAGRAM SVG */
+    .flow-svg-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; margin-top: 20px;
+      overflow: visible;
+    }
+
+    /* BACK/FOOTER */
+    .page-footer {
+      padding: 60px; text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    .page-footer p { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #3d5fe8);
+      color: white; padding: 14px 32px; border-radius: 10px;
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 0.95rem; text-decoration: none;
+      transition: all 0.25s; box-shadow: 0 0 30px rgba(91,124,250,0.3);
+      cursor: none; display: inline-block;
+    }
+    .btn-primary:hover { transform: translateY(-3px); }
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text); padding: 14px 32px; border-radius: 10px;
+      font-family: 'Syne', sans-serif; font-weight: 600;
+      font-size: 0.95rem; text-decoration: none;
+      transition: all 0.25s; cursor: none; display: inline-block; margin-left: 16px;
+    }
+    .btn-ghost:hover { border-color: rgba(91,124,250,0.4); }
+
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .page-header { grid-template-columns: 1fr; padding: 120px 24px 60px; gap: 40px; }
+      .demo-section, .aws-section { padding: 60px 24px; }
+      .output-grid, .audit-grid { grid-template-columns: 1fr; }
+      .recommendations { grid-template-columns: 1fr; }
+      .aws-services-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">ArchitectAI</a>
+  <a href="index.html" class="nav-back">← Back to Home</a>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="section-label">// the solution</div>
+    <h2 class="page-title">See It<br><span>In Action</span></h2>
+    <p class="page-sub">
+      Walk through a live demo flow — from a plain-English requirement to a complete AWS architecture blueprint, cost estimate, and visual diagram. Then see how our audit engine improves existing designs.
+    </p>
+  </div>
+  <div class="page-header-right">
+    <div class="demo-terminal">
+      <div class="terminal-bar">
+        <div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div>
+        <span class="terminal-title">architect-ai — demo</span>
+      </div>
+      <div class="terminal-body" id="terminal-body">
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-text" id="typed-text"></span><span class="t-cursor" id="tcursor"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DEMO SECTION -->
+<div class="demo-section reveal">
+  <div class="section-label">// interactive walkthrough</div>
+  <h2 style="font-family:'Syne',sans-serif;font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:32px;">
+    Try the Demo Flow
+  </h2>
+
+  <!-- TABS -->
+  <div class="demo-tabs">
+    <button class="tab active" onclick="switchTab('generate',this)">🏗️ Generate Architecture</button>
+    <button class="tab" onclick="switchTab('output',this)">📊 View Output</button>
+    <button class="tab" onclick="switchTab('audit',this)">🔍 Audit & Improve</button>
+  </div>
+
+  <!-- TAB: GENERATE -->
+  <div class="tab-content active" id="tab-generate">
+    <div class="input-panel">
+      <div class="panel-header">
+        <span class="panel-icon">💬</span>
+        <span class="panel-title">Describe Your Requirement</span>
+        <span class="panel-tag">Natural Language Input</span>
+      </div>
+      <div class="panel-body">
+        <div class="fake-input" id="fake-input">
+          <span id="input-display" class="placeholder">Click a prompt below, or type your own...</span>
+        </div>
+        <div class="example-prompts">
+          <span class="prompt-chip" onclick="selectPrompt(this, 'Build a real-time analytics platform for 10M events per day')">📊 Real-time Analytics 10M/day</span>
+          <span class="prompt-chip" onclick="selectPrompt(this, 'Build an app like Instagram with image uploads, feeds, and real-time likes')">📸 Instagram-like App</span>
+          <span class="prompt-chip" onclick="selectPrompt(this, 'Create a serverless e-commerce backend with inventory and payments')">🛍️ E-Commerce Backend</span>
+          <span class="prompt-chip" onclick="selectPrompt(this, 'Build a multi-region healthcare data platform with HIPAA compliance')">🏥 Healthcare Platform</span>
+        </div>
+        <button class="run-btn" onclick="switchTab('output', document.querySelectorAll('.tab')[1])">
+          ⚡ Generate Architecture
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: OUTPUT -->
+  <div class="tab-content" id="tab-output">
+    <div class="output-grid">
+      <!-- ARCHITECTURE -->
+      <div class="output-card">
+        <div class="panel-header">
+          <span class="panel-icon">🏗️</span>
+          <span class="panel-title">Architecture Blueprint</span>
+          <span class="panel-tag">Bedrock Output</span>
+        </div>
+        <div class="arch-output">
+          <div class="service-row">
+            <span class="service-badge sb-orange">Kinesis</span>
+            <div class="service-desc"><strong>Amazon Kinesis Data Streams</strong> — Ingests 10M events/day in real-time. Chosen for its managed throughput scaling and sub-second latency.</div>
+          </div>
+          <div class="service-row">
+            <span class="service-badge sb-blue">Lambda</span>
+            <div class="service-desc"><strong>AWS Lambda</strong> — Serverless processors triggered per shard. Transforms and routes events without managing servers.</div>
+          </div>
+          <div class="service-row">
+            <span class="service-badge sb-green">Redshift</span>
+            <div class="service-desc"><strong>Amazon Redshift</strong> — Columnar data warehouse for complex analytics queries at petabyte scale.</div>
+          </div>
+          <div class="service-row">
+            <span class="service-badge sb-orange">S3</span>
+            <div class="service-desc"><strong>Amazon S3</strong> — Raw event storage as data lake. Enables replay, batch re-processing, and long-term retention.</div>
+          </div>
+          <div class="service-row">
+            <span class="service-badge sb-purple">QuickSight</span>
+            <div class="service-desc"><strong>Amazon QuickSight</strong> — Managed BI dashboards connected directly to Redshift. No infra to manage for visualization.</div>
+          </div>
+          <div class="service-row">
+            <span class="service-badge sb-blue">CloudWatch</span>
+            <div class="service-desc"><strong>CloudWatch</strong> — End-to-end monitoring, alerting, and performance dashboards for the pipeline.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COST -->
+      <div class="output-card">
+        <div class="panel-header">
+          <span class="panel-icon">💰</span>
+          <span class="panel-title">Cost Estimate</span>
+          <span class="panel-tag">AWS Pricing API</span>
+        </div>
+        <div class="cost-output">
+          <div class="cost-total">$2,340</div>
+          <div class="cost-label">// estimated monthly cost · 10M events/day</div>
+          <div class="cost-breakdown">
+            <div class="cost-row">
+              <span class="cost-name">Kinesis</span>
+              <div class="cost-bar-wrap"><div class="cost-bar" style="width:38%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
+              <span class="cost-amt">$880</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-name">Redshift</span>
+              <div class="cost-bar-wrap"><div class="cost-bar" style="width:55%;background:linear-gradient(90deg,var(--accent2),#00c48c)"></div></div>
+              <span class="cost-amt">$1,200</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-name">Lambda</span>
+              <div class="cost-bar-wrap"><div class="cost-bar" style="width:8%;background:var(--accent3)"></div></div>
+              <span class="cost-amt">$90</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-name">S3 + Transfer</span>
+              <div class="cost-bar-wrap"><div class="cost-bar" style="width:5%;background:#ffb347"></div></div>
+              <span class="cost-amt">$60</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-name">QuickSight</span>
+              <div class="cost-bar-wrap"><div class="cost-bar" style="width:4%;background:var(--accent)"></div></div>
+              <span class="cost-amt">$80</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-name">CloudWatch</span>
+              <div class="cost-bar-wrap"><div class="cost-bar" style="width:1%;background:var(--muted)"></div></div>
+              <span class="cost-amt">$30</span>
+            </div>
+          </div>
+          <div style="margin-top:20px;padding:14px;background:rgba(0,229,192,0.06);border:1px solid rgba(0,229,192,0.15);border-radius:10px;font-size:0.78rem;color:var(--accent2);font-family:'DM Mono',monospace;">
+            💡 Savings tip: Switch Redshift to serverless for variable workloads → save ~$400/mo
+          </div>
+        </div>
+      </div>
+
+      <!-- MERMAID CODE + VISUAL FLOW DIAGRAM -->
+      <div class="output-card" style="grid-column:1/-1;">
+        <div class="panel-header">
+          <span class="panel-icon">📊</span>
+          <span class="panel-title">Architecture Diagram (Mermaid.js)</span>
+          <span class="panel-tag">Auto-Generated</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+          <div class="diagram-output" style="border-right:1px solid var(--border);">
+            <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);margin-bottom:8px;letter-spacing:0.05em;">GENERATED SYNTAX</div>
+            <div class="mermaid-box">
+<span class="kw">graph</span> LR<br>
+&nbsp;&nbsp;<span class="node">A</span>[User Events] --&gt; <span class="node">B</span>[Kinesis Streams]<br>
+&nbsp;&nbsp;<span class="node">B</span> --&gt; <span class="node">C</span>[Lambda Processor]<br>
+&nbsp;&nbsp;<span class="node">C</span> --&gt; <span class="node">D</span>[S3 Data Lake]<br>
+&nbsp;&nbsp;<span class="node">C</span> --&gt; <span class="node">E</span>[Redshift DW]<br>
+&nbsp;&nbsp;<span class="node">E</span> --&gt; <span class="node">F</span>[QuickSight]<br>
+&nbsp;&nbsp;<span class="node">D</span> --&gt;|batch| <span class="node">E</span><br>
+&nbsp;&nbsp;<span class="node">G</span>[CloudWatch] -.->|monitor| <span class="node">B</span><br>
+&nbsp;&nbsp;<span class="node">G</span> -.->|monitor| <span class="node">C</span>
+            </div>
+          </div>
+          <div class="diagram-output">
+            <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);margin-bottom:8px;letter-spacing:0.05em;">RENDERED DIAGRAM</div>
+            <svg viewBox="0 0 520 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;background:rgba(5,8,16,0.5)">
+              <defs>
+                <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L8,3z" fill="rgba(91,124,250,0.7)"/>
+                </marker>
+                <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L8,3z" fill="rgba(91,124,250,0.3)"/>
+                </marker>
+                <!-- Animated gradient lines -->
+                <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#5b7cfa" stop-opacity="0"/>
+                  <stop offset="50%" stop-color="#5b7cfa" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="#00e5c0" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Node boxes -->
+              <!-- User Events -->
+              <rect x="10" y="105" width="80" height="36" rx="8" fill="rgba(240,106,255,0.1)" stroke="rgba(240,106,255,0.4)" stroke-width="1"/>
+              <text x="50" y="127" font-family="DM Mono" font-size="8" fill="#f06aff" text-anchor="middle">User Events</text>
+              <!-- Kinesis -->
+              <rect x="120" y="105" width="80" height="36" rx="8" fill="rgba(255,153,0,0.1)" stroke="rgba(255,153,0,0.4)" stroke-width="1"/>
+              <text x="160" y="121" font-family="DM Mono" font-size="8" fill="#ffb347" text-anchor="middle">Kinesis</text>
+              <text x="160" y="133" font-family="DM Mono" font-size="7" fill="rgba(255,180,0,0.5)" text-anchor="middle">Streams</text>
+              <!-- Lambda -->
+              <rect x="230" y="105" width="80" height="36" rx="8" fill="rgba(91,124,250,0.12)" stroke="rgba(91,124,250,0.4)" stroke-width="1"/>
+              <text x="270" y="121" font-family="DM Mono" font-size="8" fill="#5b7cfa" text-anchor="middle">Lambda</text>
+              <text x="270" y="133" font-family="DM Mono" font-size="7" fill="rgba(91,124,250,0.5)" text-anchor="middle">Processor</text>
+              <!-- S3 -->
+              <rect x="340" y="50" width="70" height="36" rx="8" fill="rgba(255,153,0,0.08)" stroke="rgba(255,153,0,0.3)" stroke-width="1"/>
+              <text x="375" y="66" font-family="DM Mono" font-size="8" fill="#ffb347" text-anchor="middle">S3</text>
+              <text x="375" y="78" font-family="DM Mono" font-size="7" fill="rgba(255,180,0,0.5)" text-anchor="middle">Data Lake</text>
+              <!-- Redshift -->
+              <rect x="340" y="160" width="70" height="36" rx="8" fill="rgba(0,229,192,0.08)" stroke="rgba(0,229,192,0.35)" stroke-width="1"/>
+              <text x="375" y="176" font-family="DM Mono" font-size="8" fill="#00e5c0" text-anchor="middle">Redshift</text>
+              <text x="375" y="188" font-family="DM Mono" font-size="7" fill="rgba(0,229,192,0.5)" text-anchor="middle">Data WH</text>
+              <!-- QuickSight -->
+              <rect x="440" y="160" width="70" height="36" rx="8" fill="rgba(91,124,250,0.1)" stroke="rgba(91,124,250,0.3)" stroke-width="1"/>
+              <text x="475" y="176" font-family="DM Mono" font-size="8" fill="#5b7cfa" text-anchor="middle">QuickSight</text>
+              <text x="475" y="188" font-family="DM Mono" font-size="7" fill="rgba(91,124,250,0.5)" text-anchor="middle">Dashboards</text>
+              <!-- CloudWatch -->
+              <rect x="230" y="15" width="80" height="30" rx="8" fill="rgba(91,124,250,0.06)" stroke="rgba(91,124,250,0.2)" stroke-width="1"/>
+              <text x="270" y="34" font-family="DM Mono" font-size="7.5" fill="rgba(91,124,250,0.7)" text-anchor="middle">CloudWatch</text>
+
+              <!-- Edges -->
+              <line x1="91" y1="123" x2="118" y2="123" stroke="rgba(91,124,250,0.5)" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4 3">
+                <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.5s" repeatCount="indefinite"/>
+              </line>
+              <line x1="201" y1="123" x2="228" y2="123" stroke="rgba(91,124,250,0.5)" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4 3">
+                <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.5s" repeatCount="indefinite"/>
+              </line>
+              <line x1="310" y1="113" x2="338" y2="76" stroke="rgba(91,124,250,0.5)" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4 3">
+                <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.5s" repeatCount="indefinite"/>
+              </line>
+              <line x1="310" y1="133" x2="338" y2="167" stroke="rgba(0,229,192,0.5)" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4 3">
+                <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.5s" repeatCount="indefinite"/>
+              </line>
+              <line x1="376" y1="87" x2="376" y2="158" stroke="rgba(255,153,0,0.4)" stroke-width="1" stroke-dasharray="3 4" marker-end="url(#arr2)"/>
+              <line x1="411" y1="178" x2="438" y2="178" stroke="rgba(91,124,250,0.5)" stroke-width="1.5" marker-end="url(#arr)"/>
+              <line x1="270" y1="105" x2="270" y2="46" stroke="rgba(91,124,250,0.25)" stroke-width="1" stroke-dasharray="3 4"/>
+              <line x1="160" y1="105" x2="260" y2="40" stroke="rgba(91,124,250,0.2)" stroke-width="1" stroke-dasharray="3 4"/>
+
+              <!-- Legend -->
+              <line x1="10" y1="240" x2="30" y2="240" stroke="rgba(91,124,250,0.6)" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <text x="34" y="244" font-family="DM Mono" font-size="7" fill="rgba(91,124,250,0.6)">Data flow</text>
+              <line x1="100" y1="240" x2="120" y2="240" stroke="rgba(91,124,250,0.3)" stroke-width="1" stroke-dasharray="3 4"/>
+              <text x="124" y="244" font-family="DM Mono" font-size="7" fill="rgba(91,124,250,0.4)">Monitoring</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: AUDIT -->
+  <div class="tab-content" id="tab-audit">
+    <div class="audit-grid">
+      <div class="audit-card">
+        <div class="score-label">ARCHITECTURE SCORE</div>
+        <div class="audit-score score-good">78<span style="font-size:1.2rem;-webkit-text-fill-color:rgba(0,229,192,0.5)">/100</span></div>
+        <div style="margin-top:4px;font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;">Overall Health — Good with optimizations available</div>
+        <div class="audit-items">
+          <div class="audit-item"><span class="ai-icon">✅</span><div class="ai-text"><strong>Correct service selection</strong>Kinesis + Lambda for stream processing is well-suited for this scale.</div></div>
+          <div class="audit-item"><span class="ai-icon">✅</span><div class="ai-text"><strong>Separation of concerns</strong>Data lake (S3) and warehouse (Redshift) correctly separated.</div></div>
+          <div class="audit-item"><span class="ai-icon">⚠️</span><div class="ai-text"><strong>No dead-letter queue</strong>Lambda errors could silently drop events. Add SQS DLQ.</div></div>
+          <div class="audit-item"><span class="ai-icon">⚠️</span><div class="ai-text"><strong>Missing multi-AZ redundancy</strong>Single-AZ setup risks downtime. Add cross-AZ replication.</div></div>
+        </div>
+      </div>
+      <div class="audit-card">
+        <div class="score-label">COST EFFICIENCY SCORE</div>
+        <div class="audit-score score-warn">62<span style="font-size:1.2rem;-webkit-text-fill-color:rgba(255,153,0,0.5)">/100</span></div>
+        <div style="margin-top:4px;font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;">Moderate — Significant savings possible</div>
+        <div class="audit-items">
+          <div class="audit-item"><span class="ai-icon">💡</span><div class="ai-text"><strong>Redshift Serverless</strong>Switch to serverless for variable workloads → save ~$400/mo</div></div>
+          <div class="audit-item"><span class="ai-icon">💡</span><div class="ai-text"><strong>S3 Intelligent-Tiering</strong>Enable for old event data → save ~30% on storage costs</div></div>
+          <div class="audit-item"><span class="ai-icon">💡</span><div class="ai-text"><strong>Reserved Instances</strong>Commit 1-year on Kinesis shards → ~40% discount</div></div>
+          <div class="audit-item"><span class="ai-icon">✅</span><div class="ai-text"><strong>Lambda pricing is optimal</strong>Correct use of pay-per-execution for bursty workloads.</div></div>
+        </div>
+      </div>
+      <div class="full-audit-card">
+        <h4 style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:6px;">AI Recommendations</h4>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:4px;">Apply these changes to optimize your architecture before going to production.</p>
+        <div class="recommendations">
+          <div class="rec-card">
+            <div class="rec-icon">🔁</div>
+            <h5>Add SQS Dead Letter Queue</h5>
+            <p>Capture failed Lambda events so no data is silently lost. Essential for a data pipeline at this scale.</p>
+            <div class="rec-saving">Impact: High reliability · ~$5/mo cost</div>
+          </div>
+          <div class="rec-card">
+            <div class="rec-icon">⚡</div>
+            <h5>Switch to Redshift Serverless</h5>
+            <p>Automatically scales compute to match query demand. Eliminates idle provisioned cluster cost during off-peak hours.</p>
+            <div class="rec-saving">💰 Save ~$400/mo</div>
+          </div>
+          <div class="rec-card">
+            <div class="rec-icon">🌐</div>
+            <h5>Enable Multi-AZ Replication</h5>
+            <p>Add cross-AZ failover for Kinesis and Redshift. Required for production SLAs above 99.9% uptime.</p>
+            <div class="rec-saving">Impact: Critical resilience · ~$120/mo cost</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AWS SERVICES SPOTLIGHT -->
+<div class="aws-section reveal">
+  <div class="section-label">// why aws</div>
+  <h2 style="font-family:'Syne',sans-serif;font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.03em;">
+    Core AWS Services <span style="background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Powering Us</span>
+  </h2>
+  <p style="color:var(--muted);margin-top:12px;font-size:0.95rem;max-width:520px;line-height:1.7;">Every component is AWS-native — giving us the reliability, scale, and pricing data needed to generate production-grade recommendations.</p>
+
+  <div class="aws-services-grid">
+    <div class="aws-service-card">
+      <div class="aws-logo">🧠</div>
+      <h5>Amazon Bedrock</h5>
+      <p>LLM backbone. Reasons over AWS documentation, service trade-offs, and your requirements to generate expert-level architectures.</p>
+      <div class="aws-why">→ Claude / Titan models</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">💰</div>
+      <h5>AWS Pricing API</h5>
+      <p>Real-time pricing data for every AWS service. Powers accurate monthly cost breakdowns — no guesswork, no static spreadsheets.</p>
+      <div class="aws-why">→ Live pricing data</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">📚</div>
+      <h5>Bedrock Knowledge Base</h5>
+      <p>Indexes AWS Architecture Center docs and Well-Architected Framework for context-aware recommendations grounded in AWS best practices.</p>
+      <div class="aws-why">→ RAG architecture</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">☁️</div>
+      <h5>S3 + CloudFront</h5>
+      <p>Frontend hosted on S3 with CloudFront CDN for global low-latency delivery. Infinitely scalable static hosting for our React interface.</p>
+      <div class="aws-why">→ Frontend hosting</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">⚙️</div>
+      <h5>EC2 / Elastic Beanstalk</h5>
+      <p>FastAPI backend deployed on managed EC2 instances via Elastic Beanstalk — auto-scaling, load balancing, zero ops overhead.</p>
+      <div class="aws-why">→ Backend compute</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">🔒</div>
+      <h5>AWS IAM</h5>
+      <p>Least-privilege access control for all service-to-service communication. Bedrock, S3, and API Gateway secured with role-based policies.</p>
+      <div class="aws-why">→ Security & access</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">⚡</div>
+      <h5>API Gateway</h5>
+      <p>Managed API endpoint layer between frontend and FastAPI backend. Handles auth, rate limiting, and request routing at scale.</p>
+      <div class="aws-why">→ API management</div>
+    </div>
+    <div class="aws-service-card">
+      <div class="aws-logo">📊</div>
+      <h5>CloudWatch</h5>
+      <p>End-to-end observability for our platform — latency, error rates, token usage metrics, and Bedrock call tracking all in one place.</p>
+      <div class="aws-why">→ Monitoring & logs</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="page-footer">
+  <p>Built for AWS Hackathon 2025 · Powered by Amazon Bedrock</p>
+  <a href="index.html" class="btn-primary">← Back to Home</a>
+  <a href="#" class="btn-ghost">View on GitHub ↗</a>
+</div>
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cursor.style.left=mx+'px'; cursor.style.top=my+'px'; });
+  (function animRing() {
+    rx += (mx-rx)*0.15; ry += (my-ry)*0.15;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    requestAnimationFrame(animRing);
+  })();
+
+  // TERMINAL TYPEWRITER
+  const lines = [
+    '> architect-ai generate --prompt "Real-time analytics 10M/day"',
+    '',
+    '  🧠 Analyzing requirements...',
+    '  📚 Querying AWS Knowledge Base...',
+    '  🔍 Reasoning over 200+ services...',
+    '  💡 Selecting optimal stack...',
+    '  💰 Fetching pricing from AWS API...',
+    '  📊 Generating Mermaid diagram...',
+    '',
+    '  ✅ Architecture generated in 3.2s',
+    '  Services: Kinesis, Lambda, S3, Redshift, QuickSight',
+    '  Est. Cost: $2,340/month',
+    '  Diagram: mermaid_output.md',
+  ];
+  const tb = document.getElementById('terminal-body');
+  let lineIdx = 0, charIdx = 0;
+  let current = '';
+  const typedEl = document.getElementById('typed-text');
+  const tcursor = document.getElementById('tcursor');
+
+  function typeNext() {
+    if (lineIdx >= lines.length) { tcursor.style.display='none'; return; }
+    const line = lines[lineIdx];
+    if (charIdx < line.length) {
+      current += line[charIdx];
+      typedEl.textContent = current;
+      charIdx++;
+      setTimeout(typeNext, line.startsWith(' ') ? 15 : 22);
+    } else {
+      const div = document.createElement('div');
+      div.className = 't-line';
+      div.style.cssText = 'font-size:0.78rem;line-height:1.6;';
+      const colored = line
+        .replace(/(✅|✔)/g, '<span style="color:#00e5c0">$1</span>')
+        .replace(/(🧠|📚|🔍|💡|💰|📊)/g, '<span>$1</span>')
+        .replace(/(Services:|Est\. Cost:|Diagram:)/g, '<span style="color:#5b7cfa">$1</span>');
+      div.innerHTML = colored || '&nbsp;';
+      div.style.color = line.startsWith('  ✅') ? 'var(--accent2)' : line.startsWith('>') ? 'var(--accent)' : 'var(--muted)';
+      tb.insertBefore(div, tb.lastElementChild);
+      typedEl.textContent = ''; current = '';
+      lineIdx++; charIdx = 0;
+      setTimeout(typeNext, 120);
+    }
+  }
+  setTimeout(typeNext, 800);
+
+  // TABS
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // PROMPT CHIPS
+  function selectPrompt(el, text) {
+    document.querySelectorAll('.prompt-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const inp = document.getElementById('input-display');
+    inp.classList.remove('placeholder');
+    inp.textContent = text;
+  }
+
+  // REVEAL
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
